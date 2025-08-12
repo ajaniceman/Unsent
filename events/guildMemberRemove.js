@@ -1,14 +1,14 @@
 const { Events } = require('discord.js');
-const config = require('../config/config.json');
+const config = require('../config/config.json'); // <--- REVERT TO CONFIG
 
 module.exports = {
     name: Events.GuildMemberRemove,
     once: false,
-    async execute(member) { // No 'client' needed here unless you plan to use bot data
+    async execute(member) {
         console.log(`Member Left: ${member.user.tag} (${member.id}) from ${member.guild.name}`);
 
-        const leaveChannelId = config.channels.leave_log;
-        const leaveMessageTemplate = config.fallback_messages.leave; // Gets the new bolded message
+        const leaveChannelId = config.channels.leave_log; // <--- REVERT TO CONFIG
+        const leaveMessageTemplate = config.fallback_messages.leave; // <--- REVERT TO CONFIG
 
         if (!leaveChannelId) {
             console.warn('Leave channel ID not set in config.json. Skipping leave message.');
@@ -19,8 +19,8 @@ module.exports = {
             const channel = await member.guild.channels.fetch(leaveChannelId);
             if (channel && channel.isTextBased()) {
                 let messageToSend = leaveMessageTemplate
-                    .replace('{username}', member.user.username) // Use .username for plain text like in your example
-                    .replace('{server.name}', member.guild.name); // Although not in your example, keep it for consistency if needed
+                    .replace('{username}', member.user.username)
+                    .replace('{server.name}', member.guild.name);
 
                 await channel.send(messageToSend);
             } else {

@@ -1,7 +1,13 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, GatewayIntentBits, Collection, Events, REST, Routes } = require('discord.js'); // Add REST and Routes
+const { Client, GatewayIntentBits, Collection, Events, REST, Routes, ActivityType } = require('discord.js');
 const config = require('./config/config.json');
+
+// --- Only check for sensitive env variables ---
+if (!process.env.BOT_TOKEN || !process.env.GUILD_ID) {
+    console.error('ERROR: Missing BOT_TOKEN or GUILD_ID environment variables.');
+    process.exit(1);
+}
 
 const client = new Client({
     intents: [
@@ -11,14 +17,11 @@ const client = new Client({
     ],
 });
 
-// Create a Collection to store your commands
-client.commands = new Collection(); // <--- NEW
+client.commands = new Collection();
+const commandsPath = path.join(__dirname, 'commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
-// Load commands
-const commandsPath = path.join(__dirname, 'commands'); // <--- NEW
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js')); // <--- NEW
-
-for (const file of commandFiles) { // <--- NEW BLOCK FOR COMMANDS
+for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const command = require(filePath);
     if ('data' in command && 'execute' in command) {
@@ -29,8 +32,6 @@ for (const file of commandFiles) { // <--- NEW BLOCK FOR COMMANDS
     }
 }
 
-
-// Load event files (existing code, just showing context)
 client.events = new Collection();
 const eventsPath = path.join(__dirname, 'events');
 const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
@@ -52,11 +53,36 @@ for (const file of eventFiles) {
 }
 
 
-// When the client is ready, deploy slash commands
-client.once(Events.ClientReady, async c => { // <--- MODIFIED TO BE ASYNC
+client.once(Events.ClientReady, async c => {
     console.log(`Ready! Logged in as ${c.user.tag}`);
     console.log(`Bot ID: ${c.user.id}`);
     console.log(`Currently in ${client.guilds.cache.size} guilds.`);
+
+    // --- APPLY SAVED BOT PRESENCE FROM CONFIG.JSON ---
+    const { status, activity } = config.bot_presence;
+
+    if (activity && activity.name && activity.type) {
+        const activityTypeEnum = ActivityType[activity.type];
+        if (activityTypeEnum !== undefined) {
+            const activityOptions = { type: activityTypeEnum };
+            if (activity.url) {
+                activityOptions.url = activity.url;
+            }
+            await c.user.setActivity(activity.name, activityOptions);
+        } else {
+            console.warn(`[PRESENCE] Unknown ActivityType '${activity.type}' in config.json. Defaulting to no activity.`);
+        }
+    } else {
+        c.user.setActivity(null);
+    }
+
+    if (status) {
+        await c.user.setStatus(status);
+    } else {
+        c.user.setStatus('online');
+    }
+    console.log(`Bot presence loaded from config: Status - ${status || 'online'}, Activity - ${activity ? `${activity.type} ${activity.name}` : 'None'}.`);
+    // --- END APPLY SAVED BOT PRESENCE ---
 
     // Deploy slash commands
     const commandsToDeploy = [];
@@ -64,29 +90,24 @@ client.once(Events.ClientReady, async c => { // <--- MODIFIED TO BE ASYNC
         commandsToDeploy.push(command.data.toJSON());
     }
 
-    const rest = new REST({ version: '10' }).setToken(config.bot.token);
+    const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
 
     try {
         console.log(`Started refreshing ${commandsToDeploy.length} application (/) commands.`);
-
-        // Register commands for a specific guild (faster for testing)
         const data = await rest.put(
-            Routes.applicationGuildCommands(c.user.id, config.guild_id), // <--- Use Guild ID from config
+            Routes.applicationGuildCommands(c.user.id, process.env.GUILD_ID),
             { body: commandsToDeploy },
         );
-
-        console.log(`Successfully reloaded ${data.length} application (/) commands in guild ${config.guild_id}.`);
+        console.log(`Successfully reloaded ${data.length} application (/) commands in guild ${process.env.GUILD_ID}.`);
     } catch (error) {
         console.error(error);
     }
 });
 
-// Handle slash command interactions
-client.on(Events.InteractionCreate, async interaction => { // <--- NEW BLOCK FOR INTERACTIONS
+client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     const command = interaction.client.commands.get(interaction.commandName);
-
     if (!command) {
         console.error(`No command matching ${interaction.commandName} was found.`);
         return;
@@ -104,8 +125,7 @@ client.on(Events.InteractionCreate, async interaction => { // <--- NEW BLOCK FOR
     }
 });
 
-
-client.login(config.bot.token);
+client.login(process.env.BOT_TOKEN);
 
 process.on('unhandledRejection', error => {
     console.error('Unhandled promise rejection:', error);

@@ -1,0 +1,33 @@
+{
+  "channels": {
+    "join_log": "1393987904430407680",
+    "leave_log": "1393991138502774998"
+  },
+  "fallback_messages": {
+    "join": "Welcome, {user}! Enjoy your stay in {server.name}.",
+    "leave": "**{username}** **disconnected.** their presence.. deleted."
+  },
+  "events": {
+    "guildMemberAdd": {
+      "embed": {
+        "title": "{eye_emoji} {bot_name} is watching.",
+        "description": "**{username}** logged in.\ntyping...\nbut will you ever press send?",
+        "eye_emoji_id": "1394082213045473420",
+        "author_icon_url": "https://cdn.discordapp.com/attachments/1166479488150945792/1394085994646605884/Untitled_design.png?ex=68758741&is=687435c1&hm=5dc334ee31dc2497e3b4ec5a4629d087b4b2eac66b3aaa6a5d9feae2eaaae481&"
+      }
+    }
+  },
+  "permissions": {
+    "allowed_role_ids": [
+      "1393744473556516925"
+    ]
+  },
+  "bot_presence": {
+    "status": "dnd",
+    "activity": {
+      "type": "Watching",
+      "name": "what use to be",
+      "url": null
+    }
+  }
+}

@@ -1,22 +1,19 @@
 const { Events, EmbedBuilder } = require('discord.js');
-const config = require('../config/config.json');
+const config = require('../config/config.json'); // <--- REVERT TO CONFIG
 
 module.exports = {
     name: Events.GuildMemberAdd,
     once: false,
-    async execute(member, client) { // 'client' is correctly passed here
+    async execute(member, client) {
         console.log(`Member Joined: ${member.user.tag} (${member.id}) to ${member.guild.name}`);
 
-        const joinChannelId = config.channels.join_log;
-
-        const embedConfig = config.events.guildMemberAdd.embed;
+        const joinChannelId = config.channels.join_log; // <--- REVERT TO CONFIG
+        const embedConfig = config.events.guildMemberAdd.embed; // <--- REVERT TO CONFIG
         const embedTitleTemplate = embedConfig.title;
         const embedDescriptionTemplate = embedConfig.description;
         const eyeEmojiId = embedConfig.eye_emoji_id;
         const authorIconUrl = embedConfig.author_icon_url;
-
-        const joinMessageTemplate = config.fallback_messages.join;
-
+        const joinMessageTemplate = config.fallback_messages.join; // <--- REVERT TO CONFIG
 
         if (!joinChannelId) {
             console.warn('Join channel ID not set in config.json. Skipping join embed.');
@@ -30,17 +27,16 @@ module.exports = {
                 const customEyeEmoji = `<:custom_eye:${eyeEmojiId}>`;
                 const botUsername = client.user.username;
 
-                // Replace both {eye_emoji} AND {bot_name} placeholders
                 const title = embedTitleTemplate
                     .replace('{eye_emoji}', customEyeEmoji)
-                    .replace('{bot_name}', botUsername); // <--- MODIFIED HERE
+                    .replace('{bot_name}', botUsername);
 
                 const description = embedDescriptionTemplate.replace('{username}', member.user.username);
 
                 const welcomeEmbed = new EmbedBuilder()
                     .setTitle(title)
                     .setDescription(description)
-                    .setColor(0x00FF00);
+                    .setColor(0x7823eb);
 
                 if (authorIconUrl) {
                     welcomeEmbed.setAuthor({
@@ -48,7 +44,6 @@ module.exports = {
                         iconURL: authorIconUrl
                     });
                 }
-
 
                 await channel.send({ embeds: [welcomeEmbed] });
 
